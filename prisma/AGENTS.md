@@ -15,6 +15,11 @@
 - Never hand-edit applied SQL migration files
 - Prisma 7: datasource URL is in `prisma.config.ts`, not in `schema.prisma`
 
+## Auth.js Models
+
+- `Account` — OAuth provider accounts (Google), linked to User via `userId`
+- `Session` — Database sessions for Auth.js (JWT strategy is primary, but model is required by PrismaAdapter)
+
 ## Client
 
 - Singleton in `src/lib/db/client.ts`

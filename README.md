@@ -1,6 +1,6 @@
 # NotIn
 
-Leave management app for ~12 employees at [thoughtlab.studio](https://thoughtlab.studio).
+Leave management app
 
 ## Stack
 
@@ -46,14 +46,14 @@ pgAdmin is available at [http://localhost:5050](http://localhost:5050) (admin@no
 
 ### Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start dev server |
-| `pnpm build` | Generate Prisma client, run migrations, build |
-| `pnpm lint` | Run ESLint |
-| `pnpm test` | Run tests |
-| `pnpm test:watch` | Run tests in watch mode |
-| `pnpm test:coverage` | Run tests with coverage |
+| Command              | Description                                   |
+| -------------------- | --------------------------------------------- |
+| `pnpm dev`           | Start dev server                              |
+| `pnpm build`         | Generate Prisma client, run migrations, build |
+| `pnpm lint`          | Run ESLint                                    |
+| `pnpm test`          | Run tests                                     |
+| `pnpm test:watch`    | Run tests in watch mode                       |
+| `pnpm test:coverage` | Run tests with coverage                       |
 
 ### Environment Variables
 
@@ -63,13 +63,13 @@ Copy `.env.example` to `.env` and fill in the values:
 cp .env.example .env
 ```
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `AUTH_SECRET` | Auth.js secret |
-| `AUTH_GOOGLE_ID` | Google OAuth client ID |
-| `AUTH_GOOGLE_SECRET` | Google OAuth client secret |
-| `AUTH_URL` | App URL (http://localhost:3000 for local) |
+| Variable             | Description                               |
+| -------------------- | ----------------------------------------- |
+| `DATABASE_URL`       | PostgreSQL connection string              |
+| `AUTH_SECRET`        | Auth.js secret                            |
+| `AUTH_GOOGLE_ID`     | Google OAuth client ID                    |
+| `AUTH_GOOGLE_SECRET` | Google OAuth client secret                |
+| `AUTH_URL`           | App URL (http://localhost:3000 for local) |
 
 ## License
 

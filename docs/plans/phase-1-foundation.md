@@ -432,7 +432,9 @@ Takes a year, calls the Easter function, returns `{ date: Date, name: string }[]
 ### Section 3: Main Seed Function
 
 1. Clear all tables with `deleteMany` in reverse dependency order (Notification, BalanceAdjustment, LeaveRequest, LeaveBalance, PublicHoliday, User)
-2. Create admin user: `{ email: "admin@thoughtlab.studio", name: "Admin User", role: "ADMIN" }`
+2. Create admin users:
+   - `{ email: "admin@thoughtlab.studio", name: "Admin User", role: "ADMIN" }`
+   - `{ email: "connormcd98@gmail.com", name: "Connor McDonald", role: "ADMIN" }` (dev admin for local testing)
 3. Create 3-4 sample employees with `@thoughtlab.studio` emails
 4. Create `LeaveBalance` for each user for 2026 and 2027:
    - Admin: 20 days annual allowance

@@ -3,9 +3,9 @@
 ## Directory Layout
 
 - `db/` — Prisma client singleton
-- `rbac/` — Role + permission definitions (Phase 2)
+- `rbac/` — Role enum permissions map (`ROLE_PERMISSIONS`), `hasPermission()` helper, `Permission` type
 - `validators/` — Zod schemas (Phase 3)
-- `auth/` — Server-side session helpers (Phase 2)
+- `auth/` — Server-side session verification (`getSession`, `requireSession`, `requirePermission`, `requireAdmin`)
 - `utils.ts` — Shared utility functions (shadcn cn() helper)
 
 ## Conventions

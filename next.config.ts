@@ -4,13 +4,14 @@ const isDev = process.env.NODE_ENV === "development";
 
 const cspDirectives = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://accounts.google.com`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "connect-src 'self'",
+  "img-src 'self' data: blob: https://lh3.googleusercontent.com",
+  "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com",
   "worker-src 'self'",
+  "frame-src https://accounts.google.com",
   "frame-ancestors 'none'",
-  "form-action 'self'",
+  "form-action 'self' https://accounts.google.com",
   "base-uri 'self'",
 ];
 
