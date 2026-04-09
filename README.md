@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NotIn
+
+Leave management app for ~12 employees at [thoughtlab.studio](https://thoughtlab.studio).
+
+## Stack
+
+- **Framework:** Next.js 16 (App Router, TypeScript, pnpm)
+- **Database:** PostgreSQL 16 (Docker local, Neon prod)
+- **ORM:** Prisma 7
+- **Auth:** Auth.js with Google OAuth
+- **Validation:** Zod v4
+- **UI:** shadcn/ui + Tailwind v4
+- **Testing:** Vitest
+- **CI/CD:** GitHub Actions + Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 22+
+- pnpm 9+
+- Docker
+
+### Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Install dependencies
+pnpm install
+
+# Start Postgres + pgAdmin
+docker compose up -d
+
+# Run migrations
+pnpm prisma migrate dev
+
+# Seed the database
+pnpm prisma db seed
+
+# Start dev server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+pgAdmin is available at [http://localhost:5050](http://localhost:5050) (admin@notin.dev / admin).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Scripts
 
-## Learn More
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start dev server |
+| `pnpm build` | Generate Prisma client, run migrations, build |
+| `pnpm lint` | Run ESLint |
+| `pnpm test` | Run tests |
+| `pnpm test:watch` | Run tests in watch mode |
+| `pnpm test:coverage` | Run tests with coverage |
 
-To learn more about Next.js, take a look at the following resources:
+### Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Copy `.env.example` to `.env` and fill in the values:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+cp .env.example .env
+```
 
-## Deploy on Vercel
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `AUTH_SECRET` | Auth.js secret |
+| `AUTH_GOOGLE_ID` | Google OAuth client ID |
+| `AUTH_GOOGLE_SECRET` | Google OAuth client secret |
+| `AUTH_URL` | App URL (http://localhost:3000 for local) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private
