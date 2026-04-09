@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  EMPLOYEE
+  ADMIN
+}
+
+enum LeaveType {
+  PAID_ANNUAL
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  CANCELLED
+}
+
+enum DayType {
+  FULL
+  MORNING
+  AFTERNOON
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  name      String?
+  role      Role     @default(EMPLOYEE)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
+
+  @@map("users")
+}
+
+model LeaveRequest {
+  id        String      @id @default(uuid()) @db.Uuid
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  userId    String      @map("user_id") @db.Uuid
+  user      User        @relation(fields: [userId], references: [id])
+
+  leaveType LeaveType   @map("leave_type")
+  startDate DateTime    @map("start_date") @db.Date
+  endDate   DateTime    @map("end_date") @db.Date
+  dayType   DayType     @default(FULL) @map("day_type")
+  note      String?
+
+  status        LeaveStatus @default(PENDING)
+  reviewedBy    String?     @map("reviewed_by") @db.Uuid
+  reviewedAt    DateTime?   @map("reviewed_at")
+  declineReason String?     @map("decline_reason")
+
+  @@map("leave_requests")
+}
+
+model LeaveBalance {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  userId          String @map("user_id") @db.Uuid
+  user            User   @relation(fields: [userId], references: [id])
+
+  year            Int
+  annualAllowance Float  @map("annual_allowance")
+  usedDays        Float  @default(0) @map("used_days")
+  carriedOver     Float  @default(0) @map("carried_over")
+
+  @@unique([userId, year])
+  @@map("leave_balances")
+}
+
+model PublicHoliday {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  date     DateTime @db.Date
+  name     String
+  year     Int
+  isCustom Boolean  @default(false) @map("is_custom")
+
+  @@unique([date])
+  @@map("public_holidays")
+}
+
+model BalanceAdjustment {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId     String @map("user_id") @db.Uuid
+  adjustedBy String @map("adjusted_by") @db.Uuid
+  year       Int
+  days       Float
+  reason     String
+
+  @@map("balance_adjustments")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId  String  @map("user_id") @db.Uuid
+  message String
+  link    String?
+  read    Boolean @default(false)
+
+  @@map("notifications")
+}
