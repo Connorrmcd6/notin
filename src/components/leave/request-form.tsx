@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
+import type { DateRange } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -30,13 +31,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { submitLeaveRequest } from "@/lib/api/client";
+import { submitLeaveRequest, fetchLeaveHistory } from "@/lib/api/client";
+import type { LeaveRequest } from "@/generated/prisma/client";
 
 interface FormData {
   leaveType: "PAID_ANNUAL" | "UNPAID";
-  startDate: Date | undefined;
-  endDate: Date | undefined;
   dayType: "FULL" | "MORNING" | "AFTERNOON";
   note: string;
 }
@@ -44,20 +45,23 @@ interface FormData {
 export function RequestForm() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [holidays, setHolidays] = useState<Date[]>([]);
+  const [fetchedYear, setFetchedYear] = useState<number | null>(null);
+  const [existingRequests, setExistingRequests] = useState<LeaveRequest[]>([]);
+  const [overlapWarning, setOverlapWarning] = useState(false);
 
   const form = useForm<FormData>({
     defaultValues: {
       leaveType: "PAID_ANNUAL",
-      startDate: undefined,
-      endDate: undefined,
       dayType: "FULL",
       note: "",
     },
   });
 
-  const startDate = form.watch("startDate");
-  const endDate = form.watch("endDate");
   const dayType = form.watch("dayType");
+  const startDate = dateRange?.from;
+  const endDate = dateRange?.to ?? dateRange?.from;
 
   // Half-day only allowed for single-day requests
   const isSingleDay =
@@ -65,10 +69,14 @@ export function RequestForm() {
     endDate &&
     startDate.getTime() === endDate.getTime();
 
-  // Fetch holidays for the selected year and calculate working days
-  const [holidays, setHolidays] = useState<Date[]>([]);
-  const [fetchedYear, setFetchedYear] = useState<number | null>(null);
+  // Reset dayType to FULL when switching to multi-day
+  useEffect(() => {
+    if (!isSingleDay && dayType !== "FULL") {
+      form.setValue("dayType", "FULL");
+    }
+  }, [isSingleDay, dayType, form]);
 
+  // Fetch holidays for the selected year
   const year = startDate?.getFullYear() ?? null;
 
   const fetchHolidays = useCallback(async (y: number) => {
@@ -90,6 +98,43 @@ export function RequestForm() {
     }
   }, [year, fetchedYear, fetchHolidays]);
 
+  // Fetch existing leave requests on mount for overlap detection
+  useEffect(() => {
+    async function loadExisting() {
+      try {
+        const params = new URLSearchParams({ page: "1", limit: "100" });
+        const result = await fetchLeaveHistory(params);
+        setExistingRequests(
+          result.data.filter(
+            (r) => r.status === "PENDING" || r.status === "APPROVED",
+          ),
+        );
+      } catch {
+        // Non-critical — overlap warning just won't show
+      }
+    }
+    loadExisting();
+  }, []);
+
+  // Check for overlap with existing requests
+  useEffect(() => {
+    if (!startDate || !endDate) {
+      setOverlapWarning(false);
+      return;
+    }
+
+    const start = startDate.getTime();
+    const end = endDate.getTime();
+
+    const hasOverlap = existingRequests.some((r) => {
+      const rStart = new Date(r.startDate).getTime();
+      const rEnd = new Date(r.endDate).getTime();
+      return rStart <= end && rEnd >= start;
+    });
+
+    setOverlapWarning(hasOverlap);
+  }, [startDate, endDate, existingRequests]);
+
   // Calculate preview days excluding weekends and public holidays
   function calculateDays(): number | null {
     if (!startDate || !endDate) return null;
@@ -105,11 +150,11 @@ export function RequestForm() {
     const current = new Date(
       startDate.getFullYear(), startDate.getMonth(), startDate.getDate(),
     );
-    const end = new Date(
+    const last = new Date(
       endDate.getFullYear(), endDate.getMonth(), endDate.getDate(),
     );
 
-    while (current <= end) {
+    while (current <= last) {
       const day = current.getDay();
       if (day !== 0 && day !== 6 && !holidayTimestamps.has(current.getTime())) {
         count++;
@@ -128,19 +173,14 @@ export function RequestForm() {
   tomorrow.setHours(0, 0, 0, 0);
 
   async function onSubmit(data: FormData) {
-    if (!data.startDate || !data.endDate) {
-      toast.error("Please select start and end dates");
-      return;
-    }
-
-    if (data.endDate < data.startDate) {
-      toast.error("End date must be on or after start date");
+    if (!startDate || !endDate) {
+      toast.error("Please select a date range");
       return;
     }
 
     if (
       (data.dayType === "MORNING" || data.dayType === "AFTERNOON") &&
-      data.startDate.getTime() !== data.endDate.getTime()
+      startDate.getTime() !== endDate.getTime()
     ) {
       toast.error("Half-day requests must be for a single day");
       return;
@@ -150,8 +190,8 @@ export function RequestForm() {
     try {
       const result = await submitLeaveRequest({
         leaveType: data.leaveType,
-        startDate: data.startDate.toISOString(),
-        endDate: data.endDate.toISOString(),
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
         dayType: data.dayType,
         note: data.note || undefined,
       });
@@ -178,6 +218,83 @@ export function RequestForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* Date Range — From / To */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 space-y-1">
+                <Label>From</Label>
+                <Popover>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !startDate && "text-muted-foreground",
+                        )}
+                      />
+                    }
+                  >
+                    <CalendarIcon className="mr-2 size-4" />
+                    {startDate ? format(startDate, "dd/MM/yyyy") : "Start date"}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      disabled={(date) => date < tomorrow}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <span className="mt-6 text-muted-foreground">–</span>
+              <div className="flex-1 space-y-1">
+                <Label>To</Label>
+                <Popover>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !endDate && "text-muted-foreground",
+                        )}
+                      />
+                    }
+                  >
+                    <CalendarIcon className="mr-2 size-4" />
+                    {endDate ? format(endDate, "dd/MM/yyyy") : "End date"}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      disabled={(date) => date < tomorrow}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+
+          {/* Overlap Warning */}
+          {overlapWarning && (
+            <Alert className="border-amber-500/50 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+              <TriangleAlert className="text-amber-600 dark:text-amber-400" />
+              <AlertTitle>
+                You&apos;ve already requested time off for this period.
+              </AlertTitle>
+              <AlertDescription className="text-amber-800 dark:text-amber-300">
+                You can continue with this request, but we just wanted to let
+                you know.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Leave Type */}
           <div className="space-y-2">
             <Label>Leave Type</Label>
@@ -195,72 +312,6 @@ export function RequestForm() {
                 <SelectItem value="UNPAID">Unpaid</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Start Date */}
-          <div className="space-y-2">
-            <Label>Start Date</Label>
-            <Popover>
-              <PopoverTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !startDate && "text-muted-foreground",
-                    )}
-                  />
-                }
-              >
-                <CalendarIcon className="mr-2 size-4" />
-                {startDate ? format(startDate, "PPP") : "Pick a date"}
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={(date) => {
-                    form.setValue("startDate", date);
-                    // Auto-set end date if not set or before start
-                    if (date && (!endDate || endDate < date)) {
-                      form.setValue("endDate", date);
-                    }
-                  }}
-                  disabled={(date) => date < tomorrow}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* End Date */}
-          <div className="space-y-2">
-            <Label>End Date</Label>
-            <Popover>
-              <PopoverTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !endDate && "text-muted-foreground",
-                    )}
-                  />
-                }
-              >
-                <CalendarIcon className="mr-2 size-4" />
-                {endDate ? format(endDate, "PPP") : "Pick a date"}
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={(date) => form.setValue("endDate", date)}
-                  disabled={(date) =>
-                    date < tomorrow || (startDate ? date < startDate : false)
-                  }
-                />
-              </PopoverContent>
-            </Popover>
           </div>
 
           {/* Day Type */}
@@ -298,7 +349,12 @@ export function RequestForm() {
           {previewDays !== null && (
             <div className="rounded-lg bg-muted p-3 text-sm">
               <span className="font-medium">{previewDays}</span>{" "}
-              {previewDays === 1 ? "day" : "days"} will be deducted
+              working {previewDays === 1 ? "day" : "days"} will be deducted
+              {startDate && endDate && !isSingleDay && (
+                <span className="text-muted-foreground">
+                  {" "}(weekends & public holidays excluded)
+                </span>
+              )}
             </div>
           )}
 

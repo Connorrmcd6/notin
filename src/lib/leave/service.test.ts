@@ -64,11 +64,11 @@ describe("submitLeaveRequest", () => {
     ).rejects.toThrow("No leave balance found for this year");
   });
 
-  it("rejects paid leave with insufficient balance", async () => {
+  it("rejects paid leave when beyond negative balance limit", async () => {
     mockPrisma.publicHoliday.findMany.mockResolvedValue([]);
     mockPrisma.leaveBalance.findUnique.mockResolvedValue({
       annualAllowance: 20,
-      usedDays: 20,
+      usedDays: 26,
       carriedOver: 0,
     } as never);
 
@@ -101,6 +101,17 @@ describe("submitLeaveRequest", () => {
     });
   });
 
+  it("rejects request with zero working days", async () => {
+    // Return a holiday on the same day as tomorrow, making it 0 working days
+    mockPrisma.publicHoliday.findMany.mockResolvedValue([
+      { date: tomorrow },
+    ]);
+
+    await expect(
+      submitLeaveRequest("user-1", baseInput),
+    ).rejects.toThrow("Selected dates contain no working days");
+  });
+
   it("allows unpaid leave without balance check", async () => {
     mockPrisma.publicHoliday.findMany.mockResolvedValue([]);
     mockPrisma.leaveRequest.create.mockResolvedValue({ id: "req-1", status: "PENDING" } as never);
@@ -131,7 +142,11 @@ describe("submitLeaveRequest", () => {
     mockPrisma.user.findMany.mockResolvedValue([]);
     mockPrisma.notification.create.mockResolvedValue({} as never);
 
-    const result = await submitLeaveRequest("user-1", baseInput);
+    // Use a multi-day range so there are still working days after excluding the holiday
+    const result = await submitLeaveRequest("user-1", {
+      ...baseInput,
+      endDate: dayAfterTomorrow,
+    });
 
     expect(result.warnings).toHaveLength(1);
     expect(result.warnings[0]).toContain("Freedom Day");
@@ -324,7 +339,7 @@ describe("approveLeaveRequest", () => {
     const txLeaveBalance = {
       findUnique: vi.fn().mockResolvedValue({
         annualAllowance: 20,
-        usedDays: 19,
+        usedDays: 27,
         carriedOver: 0,
       }),
     };

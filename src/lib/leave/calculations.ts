@@ -3,15 +3,29 @@ import type { DayType } from "@/generated/prisma/client";
 /**
  * Check if a date falls on a weekend (Saturday or Sunday).
  */
-function isWeekend(date: Date): boolean {
+export function isWeekend(date: Date): boolean {
   const day = date.getDay();
   return day === 0 || day === 6;
 }
 
 /**
+ * Check if a date is a non-working day (weekend or public holiday).
+ */
+export function isNonWorkingDay(date: Date, holidayDates: Date[] = []): boolean {
+  if (isWeekend(date)) return true;
+  const normalized = new Date(
+    date.getFullYear(), date.getMonth(), date.getDate(),
+  ).getTime();
+  return holidayDates.some(
+    (h) => new Date(h.getFullYear(), h.getMonth(), h.getDate()).getTime() === normalized,
+  );
+}
+
+/**
  * Calculate the number of working leave days for a request.
  * Excludes weekends and public holidays from the count.
- * Half-day (MORNING/AFTERNOON) = 0.5, FULL = working days inclusive.
+ * Half-day (MORNING/AFTERNOON) = 0.5 (must be on a working day).
+ * FULL = working days inclusive.
  */
 export function calculateLeaveDays(
   startDate: Date,
@@ -20,6 +34,7 @@ export function calculateLeaveDays(
   holidayDates: Date[] = [],
 ): number {
   if (dayType === "MORNING" || dayType === "AFTERNOON") {
+    if (isNonWorkingDay(startDate, holidayDates)) return 0;
     return 0.5;
   }
 
@@ -103,11 +118,17 @@ export function calculateRemainingBalance(balance: {
 }
 
 /**
+ * Maximum number of days a user can go into negative balance.
+ */
+export const MAX_NEGATIVE_BALANCE = 5;
+
+/**
  * Check if remaining balance is sufficient for the requested days.
+ * Users may go up to MAX_NEGATIVE_BALANCE days into negative.
  */
 export function hasSufficientBalance(
   remainingBalance: number,
   requestedDays: number,
 ): boolean {
-  return remainingBalance >= requestedDays;
+  return remainingBalance - requestedDays >= -MAX_NEGATIVE_BALANCE;
 }

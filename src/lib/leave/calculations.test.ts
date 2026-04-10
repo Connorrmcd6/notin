@@ -5,6 +5,8 @@ import {
   findHolidayOverlaps,
   calculateRemainingBalance,
   hasSufficientBalance,
+  isNonWorkingDay,
+  MAX_NEGATIVE_BALANCE,
 } from "./calculations";
 
 describe("calculateLeaveDays", () => {
@@ -72,6 +74,43 @@ describe("calculateLeaveDays", () => {
     const end = new Date("2026-05-10");
     const holidays = [new Date("2026-05-09")];
     expect(calculateLeaveDays(start, end, "FULL", holidays)).toBe(5);
+  });
+
+  it("returns 0 for half-day on a weekend", () => {
+    const saturday = new Date("2026-05-09");
+    expect(calculateLeaveDays(saturday, saturday, "MORNING")).toBe(0);
+    expect(calculateLeaveDays(saturday, saturday, "AFTERNOON")).toBe(0);
+  });
+
+  it("returns 0 for half-day on a public holiday", () => {
+    const monday = new Date("2026-05-04");
+    const holidays = [new Date("2026-05-04")];
+    expect(calculateLeaveDays(monday, monday, "MORNING", holidays)).toBe(0);
+  });
+
+  it("returns 0.5 for half-day on a working day", () => {
+    const monday = new Date("2026-05-04");
+    expect(calculateLeaveDays(monday, monday, "MORNING")).toBe(0.5);
+    expect(calculateLeaveDays(monday, monday, "AFTERNOON")).toBe(0.5);
+  });
+});
+
+describe("isNonWorkingDay", () => {
+  it("returns true for Saturday", () => {
+    expect(isNonWorkingDay(new Date("2026-05-09"))).toBe(true);
+  });
+
+  it("returns true for Sunday", () => {
+    expect(isNonWorkingDay(new Date("2026-05-10"))).toBe(true);
+  });
+
+  it("returns false for a weekday", () => {
+    expect(isNonWorkingDay(new Date("2026-05-04"))).toBe(false);
+  });
+
+  it("returns true for a weekday that is a public holiday", () => {
+    const holidays = [new Date("2026-05-04")];
+    expect(isNonWorkingDay(new Date("2026-05-04"), holidays)).toBe(true);
   });
 });
 
@@ -165,12 +204,25 @@ describe("hasSufficientBalance", () => {
     expect(hasSufficientBalance(5, 5)).toBe(true);
   });
 
-  it("returns false when balance is insufficient", () => {
-    expect(hasSufficientBalance(4, 5)).toBe(false);
+  it("allows going up to MAX_NEGATIVE_BALANCE days negative", () => {
+    // 2 remaining, requesting 7 → would leave -5, exactly at limit
+    expect(hasSufficientBalance(2, 7)).toBe(true);
+    // 2 remaining, requesting 8 → would leave -6, over limit
+    expect(hasSufficientBalance(2, 8)).toBe(false);
+  });
+
+  it("allows small negative balance", () => {
+    // 0 remaining, requesting 5 → -5, at limit
+    expect(hasSufficientBalance(0, 5)).toBe(true);
+    expect(hasSufficientBalance(0, 6)).toBe(false);
   });
 
   it("works with half-day values", () => {
     expect(hasSufficientBalance(0.5, 0.5)).toBe(true);
-    expect(hasSufficientBalance(0, 0.5)).toBe(false);
+    expect(hasSufficientBalance(0, 0.5)).toBe(true);
+  });
+
+  it("MAX_NEGATIVE_BALANCE is 5", () => {
+    expect(MAX_NEGATIVE_BALANCE).toBe(5);
   });
 });

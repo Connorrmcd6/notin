@@ -37,6 +37,10 @@ export async function submitLeaveRequest(
   const holidayDates = holidays.map((h) => h.date);
   const days = calculateLeaveDays(input.startDate, input.endDate, input.dayType, holidayDates);
 
+  if (days === 0) {
+    throw new Error("BUSINESS:Selected dates contain no working days");
+  }
+
   if (holidays.length > 0) {
     const overlaps = findHolidayOverlaps(
       input.startDate,

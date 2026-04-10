@@ -4,6 +4,9 @@ export {
   findHolidayOverlaps,
   hasMinimumNotice,
   hasSufficientBalance,
+  isWeekend,
+  isNonWorkingDay,
+  MAX_NEGATIVE_BALANCE,
 } from "./calculations";
 
 export { notifyAdmins, notifyEmployee } from "./notifications";
