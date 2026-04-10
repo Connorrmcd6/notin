@@ -301,6 +301,36 @@ export async function getPendingRequests(): Promise<LeaveRequest[]> {
   });
 }
 
+/**
+ * Get team-level stats for the admin dashboard.
+ */
+export async function getTeamStats(): Promise<{
+  totalEmployees: number;
+  pendingCount: number;
+  onLeaveToday: number;
+}> {
+  const today = new Date();
+  const todayStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  const [totalEmployees, pendingCount, onLeaveToday] = await Promise.all([
+    prisma.user.count(),
+    prisma.leaveRequest.count({ where: { status: "PENDING" } }),
+    prisma.leaveRequest.count({
+      where: {
+        status: "APPROVED",
+        startDate: { lte: todayStart },
+        endDate: { gte: todayStart },
+      },
+    }),
+  ]);
+
+  return { totalEmployees, pendingCount, onLeaveToday };
+}
+
 function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
 }

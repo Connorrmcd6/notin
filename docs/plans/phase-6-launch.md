@@ -1,14 +1,14 @@
 # Phase 6 — Polish & Launch
 
-| Field | Value |
-|-------|-------|
-| **Scope** | Google Calendar integration, CI/CD, testing, deployment, polish |
-| **Detail level** | High-level |
-| **Status** | Planned |
+| Field            | Value                                                           |
+| ---------------- | --------------------------------------------------------------- |
+| **Scope**        | Google Calendar integration, CI/CD, testing, deployment, polish |
+| **Detail level** | High-level                                                      |
+| **Status**       | Planned                                                         |
 
 ## What This Phase Covers
 
-Final phase — add the nice-to-have Google Calendar sync, set up CI/CD and deployment infrastructure, write tests, and polish the app for production. By the end of this phase, the app is deployed and ready for the team to use.
+Final phase — add the nice-to-have Google Calendar sync, set up CI/CD and deployment infrastructure, write tests, and polish the app for production. By the end of this phase, the app is deployed and ready for the team to use. Make more performant by caching slow changing data as much as possible, reduce any unnecessary network calls so that the app feels snappy, caches can be invalidated on actions
 
 ## Key Deliverables
 

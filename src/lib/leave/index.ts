@@ -15,4 +15,5 @@ export {
   declineLeaveRequest,
   getLeaveHistory,
   getPendingRequests,
+  getTeamStats,
 } from "./service";

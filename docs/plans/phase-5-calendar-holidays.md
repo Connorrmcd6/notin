@@ -1,14 +1,14 @@
 # Phase 5 — Calendar, Holidays & Notifications
 
-| Field | Value |
-|-------|-------|
-| **Scope** | Team calendar, public holiday management, in-app notifications |
-| **Detail level** | High-level |
-| **Status** | Planned |
+| Field            | Value                                                          |
+| ---------------- | -------------------------------------------------------------- |
+| **Scope**        | Team calendar, public holiday management, in-app notifications |
+| **Detail level** | High-level                                                     |
+| **Status**       | Planned                                                        |
 
 ## What This Phase Covers
 
-Add the team calendar view, public holiday admin management, and the in-app notification system. By the end of this phase, the team can see who's out at a glance, public holidays are visible, and users receive notifications for leave events.
+Add the team calendar view, public holiday admin management, and the in-app notification system. By the end of this phase, the team can see who's out at a glance, public holidays are visible, and users receive notifications for leave events. also make sure employees can delete account or admin can delete.
 
 ## Key Deliverables
 

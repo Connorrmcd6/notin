@@ -73,9 +73,11 @@ async function main() {
   await prisma.leaveRequest.deleteMany();
   await prisma.leaveBalance.deleteMany();
   await prisma.publicHoliday.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.account.deleteMany();
   await prisma.user.deleteMany();
 
-  // Create admin user
+  // Create admin user (non-OAuth seed user for testing)
   const admin = await prisma.user.create({
     data: {
       email: "admin@thoughtlab.studio",
@@ -84,6 +86,7 @@ async function main() {
     },
   });
   console.log(`Created admin: ${admin.email}`);
+  console.log("Note: connormcd98@gmail.com will be auto-promoted to ADMIN on first OAuth sign-in");
 
   // Create sample employees
   const employees = await Promise.all([
