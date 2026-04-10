@@ -5,6 +5,8 @@ import type {
   LeaveBalance,
   BalanceAdjustment,
   User,
+  PublicHoliday,
+  Notification,
 } from "@/generated/prisma/client";
 
 type ApiResponse<T> = T;
@@ -94,5 +96,56 @@ export function updateUserRole(userId: string, role: string) {
   return api<{ data: User }>(`/api/users/${userId}/role`, {
     method: "PATCH",
     body: JSON.stringify({ role }),
+  });
+}
+
+// Holidays
+export function fetchHolidays(year: number) {
+  return api<{ data: PublicHoliday[] }>(`/api/holidays?year=${year}`);
+}
+
+export function createHoliday(body: { date: string; name: string }) {
+  return api<{ data: PublicHoliday }>("/api/holidays", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function deleteHoliday(id: string) {
+  return api<{ success: boolean }>(`/api/holidays/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// Notifications
+export function fetchNotifications() {
+  return api<{ data: Notification[]; unreadCount: number }>(
+    "/api/notifications",
+  );
+}
+
+export function markNotificationsRead(body: { ids?: string[]; all?: boolean }) {
+  return api<{ success: boolean }>("/api/notifications/read", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+// Calendar
+export function fetchCalendarData(year: number, month: number) {
+  return api<{
+    leave: (LeaveRequest & { user: { id: string; name: string | null; email: string } })[];
+    holidays: PublicHoliday[];
+  }>(`/api/calendar?year=${year}&month=${month}`);
+}
+
+// Account / User deletion
+export function deleteAccount() {
+  return api<{ success: boolean }>("/api/account", { method: "DELETE" });
+}
+
+export function deleteUser(userId: string) {
+  return api<{ success: boolean }>(`/api/users/${userId}`, {
+    method: "DELETE",
   });
 }

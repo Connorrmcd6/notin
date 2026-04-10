@@ -9,6 +9,9 @@ import {
   ShieldCheck,
   Users,
   CalendarDays,
+  CalendarRange,
+  CalendarCheck,
+  Settings,
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,11 +38,14 @@ const employeeNav = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Request Leave", href: "/dashboard/request", icon: PlaneTakeoff },
   { label: "History", href: "/dashboard/history", icon: Clock },
+  { label: "Calendar", href: "/calendar", icon: CalendarRange },
+  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 const adminNav = [
   { label: "Approvals", href: "/admin", icon: ShieldCheck },
   { label: "Manage Users", href: "/admin/users", icon: Users },
+  { label: "Holidays", href: "/admin/holidays", icon: CalendarCheck },
 ];
 
 function NavItems({
@@ -101,7 +107,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter>
         <p className="px-2 text-xs text-muted-foreground">
-          Leave Management
+          (Not affiliated with LinkedIn)
         </p>
       </SidebarFooter>
     </Sidebar>

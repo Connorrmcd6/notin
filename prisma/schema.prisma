@@ -42,6 +42,7 @@ model User {
 
   leaveRequests LeaveRequest[]
   leaveBalances LeaveBalance[]
+  notifications Notification[]
   accounts      Account[]
   sessions      Session[]
 
@@ -85,7 +86,7 @@ model LeaveRequest {
   updatedAt DateTime    @updatedAt @map("updated_at")
 
   userId    String      @map("user_id") @db.Uuid
-  user      User        @relation(fields: [userId], references: [id])
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   leaveType LeaveType   @map("leave_type")
   startDate DateTime    @map("start_date") @db.Date
@@ -107,7 +108,7 @@ model LeaveBalance {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   userId          String @map("user_id") @db.Uuid
-  user            User   @relation(fields: [userId], references: [id])
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   year            Int
   annualAllowance Float  @map("annual_allowance")
@@ -149,6 +150,7 @@ model Notification {
   createdAt DateTime @default(now()) @map("created_at")
 
   userId  String  @map("user_id") @db.Uuid
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   message String
   link    String?
   read    Boolean @default(false)

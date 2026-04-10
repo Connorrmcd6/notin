@@ -5,3 +5,9 @@ export const UpdateRoleSchema = z.object({
 });
 
 export type UpdateRoleInput = z.infer<typeof UpdateRoleSchema>;
+
+export const DeleteUserParamSchema = z.object({
+  id: z.uuid(),
+});
+
+export type DeleteUserParam = z.infer<typeof DeleteUserParamSchema>;

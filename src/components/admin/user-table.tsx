@@ -33,17 +33,20 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { updateUserRole, adjustBalance } from "@/lib/api/client";
+import { DeleteUserDialog } from "@/components/admin/delete-user-dialog";
 import type { LeaveBalance, User } from "@/generated/prisma/client";
 
 type UserWithBalance = User & { leaveBalances: LeaveBalance[] };
 
 interface UserTableProps {
   users: UserWithBalance[];
+  currentUserId: string;
 }
 
-export function UserTable({ users }: UserTableProps) {
+export function UserTable({ users, currentUserId }: UserTableProps) {
   const router = useRouter();
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<UserWithBalance | null>(null);
   const [adjustTarget, setAdjustTarget] = useState<UserWithBalance | null>(null);
   const [adjustDays, setAdjustDays] = useState("");
   const [adjustReason, setAdjustReason] = useState("");
@@ -152,7 +155,7 @@ export function UserTable({ users }: UserTableProps) {
                     <TableCell className="text-right">
                       {balance ? remaining : "—"}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -160,6 +163,15 @@ export function UserTable({ users }: UserTableProps) {
                       >
                         Adjust
                       </Button>
+                      {user.id !== currentUserId && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeleteTarget(user)}
+                        >
+                          Delete
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
@@ -233,6 +245,16 @@ export function UserTable({ users }: UserTableProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {deleteTarget && (
+        <DeleteUserDialog
+          user={deleteTarget}
+          open={!!deleteTarget}
+          onOpenChange={(open) => {
+            if (!open) setDeleteTarget(null);
+          }}
+        />
+      )}
     </>
   );
 }

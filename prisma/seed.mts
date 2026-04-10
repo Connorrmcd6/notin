@@ -23,7 +23,7 @@ function getEasterDate(year: number): Date {
   const m = Math.floor((a + 11 * h + 22 * l) / 451);
   const month = Math.floor((h + l - 7 * m + 114) / 31);
   const day = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(year, month - 1, day);
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
 
 function addDays(date: Date, days: number): Date {
@@ -32,22 +32,27 @@ function addDays(date: Date, days: number): Date {
   return result;
 }
 
+/** Create a Date at noon UTC to avoid timezone shifts when storing as @db.Date */
+function utcDate(year: number, month: number, day: number): Date {
+  return new Date(Date.UTC(year, month, day, 12, 0, 0));
+}
+
 function getSAPublicHolidays(year: number): { date: Date; name: string }[] {
   const easter = getEasterDate(year);
 
   const fixed: { date: Date; name: string }[] = [
-    { date: new Date(year, 0, 1), name: "New Year's Day" },
-    { date: new Date(year, 2, 21), name: "Human Rights Day" },
+    { date: utcDate(year, 0, 1), name: "New Year's Day" },
+    { date: utcDate(year, 2, 21), name: "Human Rights Day" },
     { date: addDays(easter, -2), name: "Good Friday" },
     { date: addDays(easter, 1), name: "Family Day" },
-    { date: new Date(year, 3, 27), name: "Freedom Day" },
-    { date: new Date(year, 4, 1), name: "Workers' Day" },
-    { date: new Date(year, 5, 16), name: "Youth Day" },
-    { date: new Date(year, 7, 9), name: "National Women's Day" },
-    { date: new Date(year, 8, 24), name: "Heritage Day" },
-    { date: new Date(year, 11, 16), name: "Day of Reconciliation" },
-    { date: new Date(year, 11, 25), name: "Christmas Day" },
-    { date: new Date(year, 11, 26), name: "Day of Goodwill" },
+    { date: utcDate(year, 3, 27), name: "Freedom Day" },
+    { date: utcDate(year, 4, 1), name: "Workers' Day" },
+    { date: utcDate(year, 5, 16), name: "Youth Day" },
+    { date: utcDate(year, 7, 9), name: "National Women's Day" },
+    { date: utcDate(year, 8, 24), name: "Heritage Day" },
+    { date: utcDate(year, 11, 16), name: "Day of Reconciliation" },
+    { date: utcDate(year, 11, 25), name: "Christmas Day" },
+    { date: utcDate(year, 11, 26), name: "Day of Goodwill" },
   ];
 
   // Sunday substitution rule: if a holiday falls on Sunday, Monday is also a holiday
@@ -67,62 +72,8 @@ function getSAPublicHolidays(year: number): { date: Date; name: string }[] {
 async function main() {
   console.log("Seeding database...");
 
-  // Clear all tables in reverse dependency order
-  await prisma.notification.deleteMany();
-  await prisma.balanceAdjustment.deleteMany();
-  await prisma.leaveRequest.deleteMany();
-  await prisma.leaveBalance.deleteMany();
+  // Clear public holidays (safe to re-seed)
   await prisma.publicHoliday.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.user.deleteMany();
-
-  // Create admin user (non-OAuth seed user for testing)
-  const admin = await prisma.user.create({
-    data: {
-      email: "admin@thoughtlab.studio",
-      name: "Admin User",
-      role: "ADMIN",
-    },
-  });
-  console.log(`Created admin: ${admin.email}`);
-  console.log("Note: connormcd98@gmail.com will be auto-promoted to ADMIN on first OAuth sign-in");
-
-  // Create sample employees
-  const employees = await Promise.all([
-    prisma.user.create({
-      data: { email: "jane@thoughtlab.studio", name: "Jane Smith", role: "EMPLOYEE" },
-    }),
-    prisma.user.create({
-      data: { email: "john@thoughtlab.studio", name: "John Doe", role: "EMPLOYEE" },
-    }),
-    prisma.user.create({
-      data: { email: "sarah@thoughtlab.studio", name: "Sarah Johnson", role: "EMPLOYEE" },
-    }),
-    prisma.user.create({
-      data: { email: "mike@thoughtlab.studio", name: "Mike Williams", role: "EMPLOYEE" },
-    }),
-  ]);
-  console.log(`Created ${employees.length} employees`);
-
-  const allUsers = [admin, ...employees];
-  const allowances = [20, 15, 16, 18, 17]; // admin gets 20, employees get 15-18
-
-  // Create leave balances for 2026 and 2027
-  for (const year of [2026, 2027]) {
-    for (let i = 0; i < allUsers.length; i++) {
-      await prisma.leaveBalance.create({
-        data: {
-          userId: allUsers[i].id,
-          year,
-          annualAllowance: allowances[i],
-          usedDays: 0,
-          carriedOver: 0,
-        },
-      });
-    }
-  }
-  console.log("Created leave balances for 2026 and 2027");
 
   // Insert SA public holidays for 2026 and 2027
   for (const year of [2026, 2027]) {
@@ -140,78 +91,8 @@ async function main() {
     console.log(`Created ${holidays.length} public holidays for ${year}`);
   }
 
-  // Create sample leave requests
-  const jane = employees[0];
-  const john = employees[1];
-  const sarah = employees[2];
-  const mike = employees[3];
-
-  // 1. PENDING request
-  await prisma.leaveRequest.create({
-    data: {
-      userId: jane.id,
-      leaveType: "PAID_ANNUAL",
-      startDate: new Date(2026, 5, 15), // June 15
-      endDate: new Date(2026, 5, 19), // June 19
-      dayType: "FULL",
-      note: "Family vacation",
-      status: "PENDING",
-    },
-  });
-  console.log("Created PENDING leave request");
-
-  // 2. APPROVED request (with balance updated)
-  await prisma.leaveRequest.create({
-    data: {
-      userId: john.id,
-      leaveType: "PAID_ANNUAL",
-      startDate: new Date(2026, 3, 6), // April 6
-      endDate: new Date(2026, 3, 10), // April 10
-      dayType: "FULL",
-      note: "Spring break",
-      status: "APPROVED",
-      reviewedBy: admin.id,
-      reviewedAt: new Date(2026, 2, 20),
-    },
-  });
-  await prisma.leaveBalance.update({
-    where: { userId_year: { userId: john.id, year: 2026 } },
-    data: { usedDays: 5 },
-  });
-  console.log("Created APPROVED leave request");
-
-  // 3. DECLINED request
-  await prisma.leaveRequest.create({
-    data: {
-      userId: sarah.id,
-      leaveType: "PAID_ANNUAL",
-      startDate: new Date(2026, 11, 24), // Dec 24
-      endDate: new Date(2026, 11, 31), // Dec 31
-      dayType: "FULL",
-      note: "Holiday season",
-      status: "DECLINED",
-      reviewedBy: admin.id,
-      reviewedAt: new Date(2026, 10, 15),
-      declineReason: "Too many team members already off during this period",
-    },
-  });
-  console.log("Created DECLINED leave request");
-
-  // 4. CANCELLED request
-  await prisma.leaveRequest.create({
-    data: {
-      userId: mike.id,
-      leaveType: "UNPAID",
-      startDate: new Date(2026, 7, 3), // Aug 3
-      endDate: new Date(2026, 7, 3), // Aug 3
-      dayType: "MORNING",
-      note: "Personal errand",
-      status: "CANCELLED",
-    },
-  });
-  console.log("Created CANCELLED leave request");
-
   console.log("Seeding complete!");
+  console.log("Sign in via Google OAuth — then run: pnpm prisma db execute --stdin <<< \"UPDATE users SET role = 'ADMIN' WHERE email = 'YOUR_EMAIL';\"");
 }
 
 main()

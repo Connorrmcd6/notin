@@ -26,7 +26,7 @@ export default async function UsersPage() {
           View team members, update roles, and adjust leave balances
         </p>
       </div>
-      <UserTable users={users} />
+      <UserTable users={users} currentUserId={session.user.id} />
     </div>
   );
 }
