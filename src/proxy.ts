@@ -5,7 +5,7 @@ import { authConfig } from "@/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-const publicPaths = ["/sign-in", "/api/auth"];
+const publicPaths = ["/sign-in", "/api/auth", "/logo.svg"];
 const adminPaths = ["/admin"];
 
 function isPublicPath(pathname: string): boolean {

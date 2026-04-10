@@ -2,24 +2,21 @@ import { SignInButton } from "@/components/auth/sign-in-button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { CalendarDays } from "lucide-react";
 
 export default function SignInPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <CalendarDays className="size-6" />
-          </div>
-          <CardTitle className="text-2xl">NotIn</CardTitle>
-          <CardDescription>Sign in to manage your leave</CardDescription>
+      <Card className="w-full max-w-xs">
+        <CardHeader className="items-center justify-items-center pb-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="NotIn" className="h-8 w-auto" />
+          <p className="text-sm text-muted-foreground">
+            Leave management
+          </p>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           <SignInButton />
           <p className="text-center text-xs text-muted-foreground">
             Restricted to @thoughtlab.studio accounts
