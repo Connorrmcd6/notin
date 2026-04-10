@@ -1,2 +1,1 @@
-export { deleteUser } from "./service";
-export { getCachedUsers } from "./cached";
+export { getUsers, deleteUser } from "./service";

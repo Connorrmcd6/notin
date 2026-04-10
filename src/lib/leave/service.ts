@@ -1,4 +1,3 @@
-import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db/client";
 import type { LeaveRequest, Prisma } from "@/generated/prisma/client";
 import type { LeaveRequestInput, LeaveHistoryQuery } from "@/lib/validators";
@@ -10,14 +9,6 @@ import {
   hasSufficientBalance,
 } from "./calculations";
 import { notifyAdmins, notifyEmployee } from "./notifications";
-import {
-  userBalancesTag,
-  userHistoryTag,
-  userNotificationsTag,
-  PENDING_REQUESTS_TAG,
-  TEAM_STATS_TAG,
-  CALENDAR_TAG,
-} from "@/lib/cache";
 import {
   createCalendarEvent,
   deleteCalendarEvent,
@@ -35,7 +26,32 @@ export async function submitLeaveRequest(
     throw new Error("BUSINESS:Leave requests require at least 1 day notice");
   }
 
-  const days = calculateLeaveDays(input.startDate, input.endDate, input.dayType);
+  const warnings: string[] = [];
+
+  const holidays = await prisma.publicHoliday.findMany({
+    where: {
+      date: { gte: input.startDate, lte: input.endDate },
+    },
+  });
+
+  const holidayDates = holidays.map((h) => h.date);
+  const days = calculateLeaveDays(input.startDate, input.endDate, input.dayType, holidayDates);
+
+  if (holidays.length > 0) {
+    const overlaps = findHolidayOverlaps(
+      input.startDate,
+      input.endDate,
+      holidayDates,
+    );
+    if (overlaps.length > 0) {
+      const names = holidays
+        .filter((h) => overlaps.some((o) => o.getTime() === h.date.getTime()))
+        .map((h) => h.name);
+      warnings.push(
+        `Your request overlaps with public holiday(s): ${names.join(", ")}`,
+      );
+    }
+  }
 
   if (input.leaveType === "PAID_ANNUAL") {
     const year = input.startDate.getFullYear();
@@ -51,30 +67,6 @@ export async function submitLeaveRequest(
     if (!hasSufficientBalance(remaining, days)) {
       throw new Error(
         `BUSINESS:Insufficient balance. ${remaining} days remaining, ${days} requested`,
-      );
-    }
-  }
-
-  const warnings: string[] = [];
-
-  const holidays = await prisma.publicHoliday.findMany({
-    where: {
-      date: { gte: input.startDate, lte: input.endDate },
-    },
-  });
-
-  if (holidays.length > 0) {
-    const overlaps = findHolidayOverlaps(
-      input.startDate,
-      input.endDate,
-      holidays.map((h) => h.date),
-    );
-    if (overlaps.length > 0) {
-      const names = holidays
-        .filter((h) => overlaps.some((o) => o.getTime() === h.date.getTime()))
-        .map((h) => h.name);
-      warnings.push(
-        `Your request overlaps with public holiday(s): ${names.join(", ")}`,
       );
     }
   }
@@ -102,10 +94,6 @@ export async function submitLeaveRequest(
     "/admin",
   );
 
-  revalidateTag(PENDING_REQUESTS_TAG, "max");
-  revalidateTag(TEAM_STATS_TAG, "max");
-  revalidateTag(userHistoryTag(userId), "max");
-
   return { request, warnings };
 }
 
@@ -131,9 +119,15 @@ export async function cancelLeaveRequest(
 
   const needsRefund =
     request.status === "APPROVED" && request.leaveType === "PAID_ANNUAL";
-  const refundDays = needsRefund
-    ? calculateLeaveDays(request.startDate, request.endDate, request.dayType)
-    : 0;
+  let refundDays = 0;
+  if (needsRefund) {
+    const holidays = await prisma.publicHoliday.findMany({
+      where: { date: { gte: request.startDate, lte: request.endDate } },
+    });
+    refundDays = calculateLeaveDays(
+      request.startDate, request.endDate, request.dayType, holidays.map((h) => h.date),
+    );
+  }
 
   const updated = await prisma.$transaction(async (tx) => {
     const updatedRequest = await tx.leaveRequest.update({
@@ -168,13 +162,6 @@ export async function cancelLeaveRequest(
     "/admin",
   );
 
-  revalidateTag(PENDING_REQUESTS_TAG, "max");
-  revalidateTag(TEAM_STATS_TAG, "max");
-  revalidateTag(userBalancesTag(userId), "max");
-  revalidateTag(userHistoryTag(userId), "max");
-  revalidateTag(CALENDAR_TAG, "max");
-  revalidateTag(userNotificationsTag(userId), "max");
-
   return updated;
 }
 
@@ -198,10 +185,14 @@ export async function approveLeaveRequest(
     throw new Error("BUSINESS:Only pending requests can be approved");
   }
 
+  const holidays = await prisma.publicHoliday.findMany({
+    where: { date: { gte: request.startDate, lte: request.endDate } },
+  });
   const days = calculateLeaveDays(
     request.startDate,
     request.endDate,
     request.dayType,
+    holidays.map((h) => h.date),
   );
 
   const updated = await prisma.$transaction(async (tx) => {
@@ -266,13 +257,6 @@ export async function approveLeaveRequest(
     });
   }
 
-  revalidateTag(PENDING_REQUESTS_TAG, "max");
-  revalidateTag(TEAM_STATS_TAG, "max");
-  revalidateTag(userBalancesTag(request.userId), "max");
-  revalidateTag(userHistoryTag(request.userId), "max");
-  revalidateTag(CALENDAR_TAG, "max");
-  revalidateTag(userNotificationsTag(request.userId), "max");
-
   return updated;
 }
 
@@ -311,11 +295,6 @@ export async function declineLeaveRequest(
     `Your leave (${formatDate(request.startDate)} – ${formatDate(request.endDate)}) was declined: ${reason}`,
     "/dashboard/history",
   );
-
-  revalidateTag(PENDING_REQUESTS_TAG, "max");
-  revalidateTag(TEAM_STATS_TAG, "max");
-  revalidateTag(userHistoryTag(request.userId), "max");
-  revalidateTag(userNotificationsTag(request.userId), "max");
 
   return updated;
 }

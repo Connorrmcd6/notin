@@ -2,8 +2,6 @@ import { vi } from "vitest";
 
 // Mock Next.js cache functions
 vi.mock("next/cache", () => ({
-  unstable_cache: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
-  revalidateTag: vi.fn(),
   revalidatePath: vi.fn(),
 }));
 

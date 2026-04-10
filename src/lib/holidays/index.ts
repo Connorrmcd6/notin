@@ -8,9 +8,3 @@ export {
 } from "./service";
 
 export { getEasterDate } from "./easter";
-
-export {
-  getCachedTeamLeaveForMonth,
-  getCachedHolidaysForMonth,
-  getCachedHolidaysByYear,
-} from "./cached";

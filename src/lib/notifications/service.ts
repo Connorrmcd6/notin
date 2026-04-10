@@ -1,7 +1,5 @@
-import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db/client";
 import type { Notification } from "@/generated/prisma/client";
-import { userNotificationsTag } from "@/lib/cache";
 
 export async function getUnreadNotifications(
   userId: string,
@@ -27,8 +25,6 @@ export async function markAsRead(
     where: { id: { in: ids }, userId },
     data: { read: true },
   });
-
-  revalidateTag(userNotificationsTag(userId), "max");
 }
 
 export async function markAllAsRead(userId: string): Promise<void> {
@@ -36,6 +32,4 @@ export async function markAllAsRead(userId: string): Promise<void> {
     where: { userId, read: false },
     data: { read: true },
   });
-
-  revalidateTag(userNotificationsTag(userId), "max");
 }

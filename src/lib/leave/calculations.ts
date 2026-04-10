@@ -1,22 +1,54 @@
 import type { DayType } from "@/generated/prisma/client";
 
 /**
- * Calculate the number of leave days for a request.
- * Half-day (MORNING/AFTERNOON) = 0.5, FULL = calendar days inclusive.
+ * Check if a date falls on a weekend (Saturday or Sunday).
+ */
+function isWeekend(date: Date): boolean {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+/**
+ * Calculate the number of working leave days for a request.
+ * Excludes weekends and public holidays from the count.
+ * Half-day (MORNING/AFTERNOON) = 0.5, FULL = working days inclusive.
  */
 export function calculateLeaveDays(
   startDate: Date,
   endDate: Date,
   dayType: DayType,
+  holidayDates: Date[] = [],
 ): number {
   if (dayType === "MORNING" || dayType === "AFTERNOON") {
     return 0.5;
   }
 
-  const msPerDay = 1000 * 60 * 60 * 24;
-  const diffDays =
-    Math.round((endDate.getTime() - startDate.getTime()) / msPerDay) + 1;
-  return diffDays;
+  const holidayTimestamps = new Set(
+    holidayDates.map((d) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(),
+    ),
+  );
+
+  let count = 0;
+  const current = new Date(
+    startDate.getFullYear(),
+    startDate.getMonth(),
+    startDate.getDate(),
+  );
+  const end = new Date(
+    endDate.getFullYear(),
+    endDate.getMonth(),
+    endDate.getDate(),
+  );
+
+  while (current <= end) {
+    if (!isWeekend(current) && !holidayTimestamps.has(current.getTime())) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
 }
 
 /**

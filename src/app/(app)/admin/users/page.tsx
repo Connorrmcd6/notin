@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { getCachedUsers } from "@/lib/users";
+import { getUsers } from "@/lib/users";
 import { UserTable } from "@/components/admin/user-table";
 
 export default async function UsersPage() {
@@ -9,7 +9,7 @@ export default async function UsersPage() {
 
   const currentYear = new Date().getFullYear();
 
-  const users = await getCachedUsers(currentYear);
+  const users = await getUsers(currentYear);
 
   return (
     <div className="space-y-6">

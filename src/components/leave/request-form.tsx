@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
@@ -65,12 +65,59 @@ export function RequestForm() {
     endDate &&
     startDate.getTime() === endDate.getTime();
 
-  // Calculate preview days
+  // Fetch holidays for the selected year and calculate working days
+  const [holidays, setHolidays] = useState<Date[]>([]);
+  const [fetchedYear, setFetchedYear] = useState<number | null>(null);
+
+  const year = startDate?.getFullYear() ?? null;
+
+  const fetchHolidays = useCallback(async (y: number) => {
+    try {
+      const res = await fetch(`/api/holidays?year=${y}`);
+      if (res.ok) {
+        const json = await res.json();
+        setHolidays(json.data.map((h: { date: string }) => new Date(h.date)));
+        setFetchedYear(y);
+      }
+    } catch {
+      // Silently fail — preview will just exclude weekends
+    }
+  }, []);
+
+  useEffect(() => {
+    if (year && year !== fetchedYear) {
+      fetchHolidays(year);
+    }
+  }, [year, fetchedYear, fetchHolidays]);
+
+  // Calculate preview days excluding weekends and public holidays
   function calculateDays(): number | null {
     if (!startDate || !endDate) return null;
     if (dayType === "MORNING" || dayType === "AFTERNOON") return 0.5;
-    const msPerDay = 1000 * 60 * 60 * 24;
-    return Math.round((endDate.getTime() - startDate.getTime()) / msPerDay) + 1;
+
+    const holidayTimestamps = new Set(
+      holidays.map((d) =>
+        new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(),
+      ),
+    );
+
+    let count = 0;
+    const current = new Date(
+      startDate.getFullYear(), startDate.getMonth(), startDate.getDate(),
+    );
+    const end = new Date(
+      endDate.getFullYear(), endDate.getMonth(), endDate.getDate(),
+    );
+
+    while (current <= end) {
+      const day = current.getDay();
+      if (day !== 0 && day !== 6 && !holidayTimestamps.has(current.getTime())) {
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    return count;
   }
 
   const previewDays = calculateDays();

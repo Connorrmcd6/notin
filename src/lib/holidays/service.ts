@@ -1,8 +1,6 @@
-import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db/client";
 import type { PublicHoliday, LeaveRequest } from "@/generated/prisma/client";
 import type { CreateHolidayInput } from "@/lib/validators";
-import { HOLIDAYS_TAG, CALENDAR_TAG } from "@/lib/cache";
 import { getEasterDate } from "./easter";
 
 // --- SA public holiday generation ---
@@ -96,9 +94,6 @@ export async function createCustomHoliday(
     },
   });
 
-  revalidateTag(HOLIDAYS_TAG, "max");
-  revalidateTag(CALENDAR_TAG, "max");
-
   return holiday;
 }
 
@@ -108,9 +103,6 @@ export async function deleteHoliday(id: string): Promise<void> {
     throw new Error("Not found");
   }
   await prisma.publicHoliday.delete({ where: { id } });
-
-  revalidateTag(HOLIDAYS_TAG, "max");
-  revalidateTag(CALENDAR_TAG, "max");
 }
 
 export async function getTeamLeaveForMonth(

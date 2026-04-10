@@ -16,10 +16,18 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-const tomorrow = new Date();
-tomorrow.setDate(tomorrow.getDate() + 1);
-const dayAfterTomorrow = new Date();
-dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+// Find the next weekday (Mon-Fri) from a given date
+function nextWeekday(from: Date): Date {
+  const d = new Date(from);
+  d.setDate(d.getDate() + 1);
+  while (d.getDay() === 0 || d.getDay() === 6) {
+    d.setDate(d.getDate() + 1);
+  }
+  return d;
+}
+
+const tomorrow = nextWeekday(new Date());
+const dayAfterTomorrow = nextWeekday(tomorrow);
 
 const baseInput = {
   leaveType: "PAID_ANNUAL" as const,
@@ -48,6 +56,7 @@ describe("submitLeaveRequest", () => {
   });
 
   it("rejects paid leave with no balance record", async () => {
+    mockPrisma.publicHoliday.findMany.mockResolvedValue([]);
     mockPrisma.leaveBalance.findUnique.mockResolvedValue(null);
 
     await expect(
@@ -56,6 +65,7 @@ describe("submitLeaveRequest", () => {
   });
 
   it("rejects paid leave with insufficient balance", async () => {
+    mockPrisma.publicHoliday.findMany.mockResolvedValue([]);
     mockPrisma.leaveBalance.findUnique.mockResolvedValue({
       annualAllowance: 20,
       usedDays: 20,
@@ -187,6 +197,7 @@ describe("cancelLeaveRequest", () => {
       endDate: tomorrow,
       dayType: "FULL",
     } as never);
+    mockPrisma.publicHoliday.findMany.mockResolvedValue([]);
 
     const txLeaveRequest = { update: vi.fn().mockResolvedValue({ id: "req-1", status: "CANCELLED" }) };
     const txLeaveBalance = { update: vi.fn() };
@@ -238,6 +249,7 @@ describe("approveLeaveRequest", () => {
       endDate: tomorrow,
       dayType: "FULL",
     } as never);
+    mockPrisma.publicHoliday.findMany.mockResolvedValue([]);
 
     const txLeaveBalance = {
       findUnique: vi.fn().mockResolvedValue({
@@ -277,6 +289,7 @@ describe("approveLeaveRequest", () => {
       endDate: tomorrow,
       dayType: "FULL",
     } as never);
+    mockPrisma.publicHoliday.findMany.mockResolvedValue([]);
 
     const txLeaveBalance = { findUnique: vi.fn(), update: vi.fn() };
     const txLeaveRequest = {
@@ -306,6 +319,7 @@ describe("approveLeaveRequest", () => {
       endDate: dayAfterTomorrow,
       dayType: "FULL",
     } as never);
+    mockPrisma.publicHoliday.findMany.mockResolvedValue([]);
 
     const txLeaveBalance = {
       findUnique: vi.fn().mockResolvedValue({
