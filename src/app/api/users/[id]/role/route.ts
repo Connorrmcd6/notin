@@ -1,7 +1,9 @@
+import { revalidateTag } from "next/cache";
 import { withErrorHandler } from "@/lib/api";
 import { requirePermission } from "@/lib/auth";
 import { UpdateRoleSchema } from "@/lib/validators";
 import { prisma } from "@/lib/db/client";
+import { USERS_TAG } from "@/lib/cache";
 
 export const PATCH = withErrorHandler(async (request) => {
   await requirePermission("users:manage");
@@ -17,6 +19,8 @@ export const PATCH = withErrorHandler(async (request) => {
     where: { id: userId },
     data: { role },
   });
+
+  revalidateTag(USERS_TAG, "max");
 
   return Response.json({ data: user });
 });

@@ -1,13 +1,13 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { HistoryTable } from "@/components/leave/history-table";
-import { getLeaveHistory } from "@/lib/leave";
+import { getCachedLeaveHistory } from "@/lib/leave";
 
 export default async function HistoryPage() {
   const session = await auth();
   if (!session?.user) redirect("/sign-in");
 
-  const result = await getLeaveHistory(session.user.id, {
+  const result = await getCachedLeaveHistory(session.user.id, {
     page: 1,
     limit: 20,
   });

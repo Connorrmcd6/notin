@@ -1,4 +1,11 @@
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db/client";
+import {
+  USERS_TAG,
+  PENDING_REQUESTS_TAG,
+  TEAM_STATS_TAG,
+  CALENDAR_TAG,
+} from "@/lib/cache";
 
 export async function deleteUser(
   targetId: string,
@@ -30,4 +37,9 @@ export async function deleteUser(
   }
 
   await prisma.user.delete({ where: { id: targetId } });
+
+  revalidateTag(USERS_TAG, "max");
+  revalidateTag(PENDING_REQUESTS_TAG, "max");
+  revalidateTag(TEAM_STATS_TAG, "max");
+  revalidateTag(CALENDAR_TAG, "max");
 }

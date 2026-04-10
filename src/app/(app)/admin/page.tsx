@@ -2,15 +2,15 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { TeamStats } from "@/components/admin/team-stats";
 import { PendingApprovals } from "@/components/admin/pending-approvals";
-import { getPendingRequests, getTeamStats } from "@/lib/leave";
+import { getCachedPendingRequests, getCachedTeamStats } from "@/lib/leave";
 
 export default async function AdminPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") redirect("/dashboard");
 
   const [stats, pendingRequests] = await Promise.all([
-    getTeamStats(),
-    getPendingRequests(),
+    getCachedTeamStats(),
+    getCachedPendingRequests(),
   ]);
 
   return (

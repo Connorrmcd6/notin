@@ -10,7 +10,13 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/lib/**/*.ts"],
-      exclude: ["src/lib/db/client.ts"],
+      exclude: [
+        "src/lib/db/client.ts",
+        "src/lib/cache/**",
+        "src/lib/google-calendar/**",
+        "src/lib/api/client.ts",
+        "src/lib/**/cached.ts",
+      ],
     },
   },
 });

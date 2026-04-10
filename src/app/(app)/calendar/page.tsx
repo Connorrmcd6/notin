@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { TeamCalendar } from "@/components/calendar/team-calendar";
-import { getTeamLeaveForMonth, getHolidaysForMonth } from "@/lib/holidays";
+import { getCachedTeamLeaveForMonth, getCachedHolidaysForMonth } from "@/lib/holidays";
 
 export default async function CalendarPage() {
   const session = await auth();
@@ -12,8 +12,8 @@ export default async function CalendarPage() {
   const month = now.getMonth() + 1;
 
   const [leave, holidays] = await Promise.all([
-    getTeamLeaveForMonth(year, month),
-    getHolidaysForMonth(year, month),
+    getCachedTeamLeaveForMonth(year, month),
+    getCachedHolidaysForMonth(year, month),
   ]);
 
   return (

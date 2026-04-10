@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db/client";
 import type { LeaveRequest, Prisma } from "@/generated/prisma/client";
 import type { LeaveRequestInput, LeaveHistoryQuery } from "@/lib/validators";
@@ -9,6 +10,18 @@ import {
   hasSufficientBalance,
 } from "./calculations";
 import { notifyAdmins, notifyEmployee } from "./notifications";
+import {
+  userBalancesTag,
+  userHistoryTag,
+  userNotificationsTag,
+  PENDING_REQUESTS_TAG,
+  TEAM_STATS_TAG,
+  CALENDAR_TAG,
+} from "@/lib/cache";
+import {
+  createCalendarEvent,
+  deleteCalendarEvent,
+} from "@/lib/google-calendar";
 
 /**
  * Submit a new leave request.
@@ -89,6 +102,10 @@ export async function submitLeaveRequest(
     "/admin",
   );
 
+  revalidateTag(PENDING_REQUESTS_TAG, "max");
+  revalidateTag(TEAM_STATS_TAG, "max");
+  revalidateTag(userHistoryTag(userId), "max");
+
   return { request, warnings };
 }
 
@@ -135,6 +152,11 @@ export async function cancelLeaveRequest(
     return updatedRequest;
   });
 
+  // Delete Google Calendar event if one was created
+  if (request.calendarEventId) {
+    await deleteCalendarEvent(userId, request.calendarEventId);
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { name: true, email: true },
@@ -145,6 +167,13 @@ export async function cancelLeaveRequest(
     `${displayName} cancelled leave (${formatDate(request.startDate)} – ${formatDate(request.endDate)})`,
     "/admin",
   );
+
+  revalidateTag(PENDING_REQUESTS_TAG, "max");
+  revalidateTag(TEAM_STATS_TAG, "max");
+  revalidateTag(userBalancesTag(userId), "max");
+  revalidateTag(userHistoryTag(userId), "max");
+  revalidateTag(CALENDAR_TAG, "max");
+  revalidateTag(userNotificationsTag(userId), "max");
 
   return updated;
 }
@@ -215,6 +244,35 @@ export async function approveLeaveRequest(
     "/dashboard/history",
   );
 
+  // Non-blocking Google Calendar event creation
+  const user = await prisma.user.findUnique({
+    where: { id: request.userId },
+    select: { name: true, email: true },
+  });
+  const calendarName = user?.name ?? user?.email ?? "Employee";
+  const typeLabel =
+    request.leaveType === "PAID_ANNUAL" ? "PTO" : "Unpaid Leave";
+  const eventId = await createCalendarEvent({
+    userId: request.userId,
+    summary: `${typeLabel} — ${calendarName}`,
+    startDate: request.startDate,
+    endDate: request.endDate,
+    dayType: request.dayType,
+  });
+  if (eventId) {
+    await prisma.leaveRequest.update({
+      where: { id: request.id },
+      data: { calendarEventId: eventId },
+    });
+  }
+
+  revalidateTag(PENDING_REQUESTS_TAG, "max");
+  revalidateTag(TEAM_STATS_TAG, "max");
+  revalidateTag(userBalancesTag(request.userId), "max");
+  revalidateTag(userHistoryTag(request.userId), "max");
+  revalidateTag(CALENDAR_TAG, "max");
+  revalidateTag(userNotificationsTag(request.userId), "max");
+
   return updated;
 }
 
@@ -253,6 +311,11 @@ export async function declineLeaveRequest(
     `Your leave (${formatDate(request.startDate)} – ${formatDate(request.endDate)}) was declined: ${reason}`,
     "/dashboard/history",
   );
+
+  revalidateTag(PENDING_REQUESTS_TAG, "max");
+  revalidateTag(TEAM_STATS_TAG, "max");
+  revalidateTag(userHistoryTag(request.userId), "max");
+  revalidateTag(userNotificationsTag(request.userId), "max");
 
   return updated;
 }

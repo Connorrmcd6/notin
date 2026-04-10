@@ -1,9 +1,11 @@
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db/client";
 import type {
   LeaveBalance,
   BalanceAdjustment,
 } from "@/generated/prisma/client";
 import type { BalanceAdjustInput } from "@/lib/validators";
+import { userBalancesTag, USERS_TAG } from "@/lib/cache";
 
 /**
  * Get all leave balances for a user, ordered by year descending.
@@ -23,7 +25,7 @@ export async function adjustBalance(
   adminId: string,
   input: BalanceAdjustInput,
 ): Promise<{ balance: LeaveBalance; adjustment: BalanceAdjustment }> {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const balance = await tx.leaveBalance.upsert({
       where: { userId_year: { userId: input.userId, year: input.year } },
       update: { annualAllowance: { increment: input.days } },
@@ -48,4 +50,9 @@ export async function adjustBalance(
 
     return { balance, adjustment };
   });
+
+  revalidateTag(userBalancesTag(input.userId), "max");
+  revalidateTag(USERS_TAG, "max");
+
+  return result;
 }

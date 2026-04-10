@@ -13,7 +13,18 @@ function isAllowedEmail(email: string): boolean {
 }
 
 export const authConfig = {
-  providers: [Google],
+  providers: [
+    Google({
+      authorization: {
+        params: {
+          scope:
+            "openid email profile https://www.googleapis.com/auth/calendar.events",
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
+    }),
+  ],
   session: { strategy: "jwt" },
   pages: {
     signIn: "/sign-in",

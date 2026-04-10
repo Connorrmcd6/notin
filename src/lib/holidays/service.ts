@@ -1,6 +1,9 @@
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db/client";
 import type { PublicHoliday, LeaveRequest } from "@/generated/prisma/client";
 import type { CreateHolidayInput } from "@/lib/validators";
+import { HOLIDAYS_TAG, CALENDAR_TAG } from "@/lib/cache";
+import { getEasterDate } from "./easter";
 
 // --- SA public holiday generation ---
 
@@ -12,24 +15,6 @@ function addDays(date: Date, days: number): Date {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
-}
-
-function getEasterDate(year: number): Date {
-  const a = year % 19;
-  const b = Math.floor(year / 100);
-  const c = year % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31);
-  const day = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
 
 export function generateSAPublicHolidays(year: number): { date: Date; name: string }[] {
@@ -102,7 +87,7 @@ export async function createCustomHoliday(
     throw new Error("BUSINESS:A holiday already exists on this date");
   }
 
-  return prisma.publicHoliday.create({
+  const holiday = await prisma.publicHoliday.create({
     data: {
       date: input.date,
       name: input.name,
@@ -110,6 +95,11 @@ export async function createCustomHoliday(
       isCustom: true,
     },
   });
+
+  revalidateTag(HOLIDAYS_TAG, "max");
+  revalidateTag(CALENDAR_TAG, "max");
+
+  return holiday;
 }
 
 export async function deleteHoliday(id: string): Promise<void> {
@@ -118,6 +108,9 @@ export async function deleteHoliday(id: string): Promise<void> {
     throw new Error("Not found");
   }
   await prisma.publicHoliday.delete({ where: { id } });
+
+  revalidateTag(HOLIDAYS_TAG, "max");
+  revalidateTag(CALENDAR_TAG, "max");
 }
 
 export async function getTeamLeaveForMonth(

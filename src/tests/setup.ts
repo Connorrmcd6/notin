@@ -7,6 +7,12 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+// Mock Google Calendar service
+vi.mock("@/lib/google-calendar", () => ({
+  createCalendarEvent: vi.fn().mockResolvedValue(null),
+  deleteCalendarEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock Prisma with all model methods
 const mockPrismaModel = () => ({
   create: vi.fn(),

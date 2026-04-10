@@ -94,10 +94,11 @@ model LeaveRequest {
   dayType   DayType     @default(FULL) @map("day_type")
   note      String?
 
-  status        LeaveStatus @default(PENDING)
-  reviewedBy    String?     @map("reviewed_by") @db.Uuid
-  reviewedAt    DateTime?   @map("reviewed_at")
-  declineReason String?     @map("decline_reason")
+  status          LeaveStatus @default(PENDING)
+  reviewedBy      String?     @map("reviewed_by") @db.Uuid
+  reviewedAt      DateTime?   @map("reviewed_at")
+  declineReason   String?     @map("decline_reason")
+  calendarEventId String?     @map("calendar_event_id")
 
   @@map("leave_requests")
 }

@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db/client";
+import { getCachedUsers } from "@/lib/users";
 import { UserTable } from "@/components/admin/user-table";
 
 export default async function UsersPage() {
@@ -9,14 +9,7 @@ export default async function UsersPage() {
 
   const currentYear = new Date().getFullYear();
 
-  const users = await prisma.user.findMany({
-    orderBy: { name: "asc" },
-    include: {
-      leaveBalances: {
-        where: { year: currentYear },
-      },
-    },
-  });
+  const users = await getCachedUsers(currentYear);
 
   return (
     <div className="space-y-6">

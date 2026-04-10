@@ -6,8 +6,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { BalanceCards } from "@/components/dashboard/balance-cards";
 import { UpcomingLeave } from "@/components/dashboard/upcoming-leave";
 import { PendingRequests } from "@/components/dashboard/pending-requests";
-import { getBalances } from "@/lib/balances";
-import { getLeaveHistory } from "@/lib/leave";
+import { getCachedBalances } from "@/lib/balances";
+import { getCachedLeaveHistory } from "@/lib/leave";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -17,13 +17,13 @@ export default async function DashboardPage() {
   const today = new Date();
 
   const [balances, pendingResult, upcomingResult] = await Promise.all([
-    getBalances(session.user.id),
-    getLeaveHistory(session.user.id, {
+    getCachedBalances(session.user.id),
+    getCachedLeaveHistory(session.user.id, {
       status: "PENDING",
       page: 1,
       limit: 5,
     }),
-    getLeaveHistory(session.user.id, {
+    getCachedLeaveHistory(session.user.id, {
       status: "APPROVED",
       page: 1,
       limit: 5,

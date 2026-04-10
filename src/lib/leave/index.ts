@@ -17,3 +17,9 @@ export {
   getPendingRequests,
   getTeamStats,
 } from "./service";
+
+export {
+  getCachedLeaveHistory,
+  getCachedPendingRequests,
+  getCachedTeamStats,
+} from "./cached";
