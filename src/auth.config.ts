@@ -25,5 +25,18 @@ export const authConfig = {
       }
       return true;
     },
+    // Read role from JWT so proxy can check it (written by src/auth.ts jwt callback)
+    jwt({ token }) {
+      return token;
+    },
+    session({ session, token }) {
+      if (token.sub) {
+        session.user.id = token.sub;
+      }
+      if (token.role) {
+        session.user.role = token.role as "ADMIN" | "EMPLOYEE";
+      }
+      return session;
+    },
   },
 } satisfies NextAuthConfig;

@@ -13,13 +13,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     async jwt({ token, user }) {
-      if (user?.email) {
+      // On first sign-in, set userId from the newly created user
+      if (user?.id) {
+        token.userId = user.id;
+      }
+
+      // Always fetch role from DB to pick up promotions (e.g. createUser event)
+      if (token.userId) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: user.email },
-          select: { id: true, role: true },
+          where: { id: token.userId as string },
+          select: { role: true },
         });
         if (dbUser) {
-          token.userId = dbUser.id;
           token.role = dbUser.role;
         }
       }

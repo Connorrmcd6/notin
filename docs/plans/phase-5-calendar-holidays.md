@@ -8,7 +8,7 @@
 
 ## What This Phase Covers
 
-Add the team calendar view, public holiday admin management, and the in-app notification system. By the end of this phase, the team can see who's out at a glance, public holidays are visible, and users receive notifications for leave events. also make sure employees can delete account or admin can delete.
+Add the team calendar view, public holiday admin management, and the in-app notification system. By the end of this phase, the team can see who's out at a glance, public holidays are visible, and users receive notifications for leave events. also make sure employees can delete their account or admin can delete. I presume creation can only be done via Oauth due to the calendar access requirement?
 
 ## Key Deliverables
 

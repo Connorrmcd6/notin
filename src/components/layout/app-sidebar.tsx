@@ -42,6 +42,29 @@ const adminNav = [
   { label: "Manage Users", href: "/admin/users", icon: Users },
 ];
 
+function NavItems({
+  items,
+  pathname,
+}: {
+  items: typeof employeeNav;
+  pathname: string;
+}) {
+  return (
+    <>
+      {items.map((item) => (
+        <SidebarMenuItem key={item.href}>
+          <Link href={item.href}>
+            <SidebarMenuButton isActive={pathname === item.href}>
+              <item.icon className="size-4" />
+              <span>{item.label}</span>
+            </SidebarMenuButton>
+          </Link>
+        </SidebarMenuItem>
+      ))}
+    </>
+  );
+}
+
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
   const isAdmin = user.role === "ADMIN";
@@ -61,17 +84,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <SidebarGroupLabel>Leave</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {employeeNav.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    render={<Link href={item.href} />}
-                    isActive={pathname === item.href}
-                  >
-                    <item.icon className="size-4" />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              <NavItems items={employeeNav} pathname={pathname} />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -80,17 +93,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <SidebarGroupLabel>Admin</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {adminNav.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      render={<Link href={item.href} />}
-                      isActive={pathname === item.href}
-                    >
-                    <item.icon className="size-4" />
-                    <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                <NavItems items={adminNav} pathname={pathname} />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
