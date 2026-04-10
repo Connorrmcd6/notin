@@ -4,8 +4,11 @@
 
 - `db/` — Prisma client singleton
 - `rbac/` — Role enum permissions map (`ROLE_PERMISSIONS`), `hasPermission()` helper, `Permission` type
-- `validators/` — Zod schemas (Phase 3)
+- `validators/` — Zod v4 schemas for leave requests, cancellation, approval, decline, history filters, balance adjustments
 - `auth/` — Server-side session verification (`getSession`, `requireSession`, `requirePermission`, `requireAdmin`)
+- `api/` — API route utilities (`withErrorHandler` — maps errors to HTTP status codes)
+- `leave/` — Leave business logic: `calculations.ts` (pure functions for day counting, balance math, holiday overlap), `notifications.ts` (admin/employee notification helpers), `service.ts` (submit, cancel, approve, decline, history, pending)
+- `balances/` — Balance management: `service.ts` (get balances, adjust with audit trail), `carryover.ts` (year-end balance carryover utility)
 - `utils.ts` — Shared utility functions (shadcn cn() helper)
 
 ## Conventions
